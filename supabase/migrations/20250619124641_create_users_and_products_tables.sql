@@ -1,130 +1,108 @@
-/*
-  # Create Users and Products Tables
+-- ========================================
+-- Supabase SQL Setup Script (PostgreSQL)
+-- Membuat tabel users dan products dengan data sample
+-- ========================================
 
-  1. New Tables
-    - `users`
-      - `id` (uuid, primary key) - Auto-generated unique identifier
-      - `username` (text, unique) - User's login username
-      - `password` (text) - Hashed password for authentication
-      - `role` (text) - User role ('user' or 'admin')
-      - `created_at` (timestamp) - Account creation timestamp
-    - `products`
-      - `id` (uuid, primary key) - Auto-generated unique identifier
-      - `nama_produk` (text) - Product name
-      - `harga_satuan` (numeric) - Unit price of the product
-      - `quantity` (integer) - Available quantity in stock
-      - `created_at` (timestamp) - Product creation timestamp
-      - `updated_at` (timestamp) - Last update timestamp
+-- Drop tables jika sudah ada (opsional, hapus komentar jika diperlukan)
+-- DROP TABLE IF EXISTS products;
+-- DROP TABLE IF EXISTS users;
 
-  2. Security
-    - Enable RLS on both `users` and `products` tables
-    - Add policies for authenticated users to read their own data
-    - Add policies for admins to perform CRUD operations on products
-    - Add policies for users to read products
-
-  3. Sample Data
-    - Insert sample users (both user and admin roles)
-    - Insert sample products for testing
-*/
-
--- Create users table
+-- ========================================
+-- Membuat tabel users
+-- ========================================
 CREATE TABLE IF NOT EXISTS users (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  username text UNIQUE NOT NULL,
-  password text NOT NULL,
-  role text NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin')),
-  created_at timestamptz DEFAULT now()
+  username TEXT UNIQUE NOT NULL,
+  password TEXT NOT NULL,
+  role TEXT NOT NULL DEFAULT 'user' CHECK (role IN ('user', 'admin')),
+  created_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Create products table
+-- ========================================
+-- Membuat tabel products
+-- ========================================
 CREATE TABLE IF NOT EXISTS products (
   id uuid PRIMARY KEY DEFAULT gen_random_uuid(),
-  nama_produk text NOT NULL,
-  harga_satuan numeric NOT NULL DEFAULT 0,
-  quantity integer NOT NULL DEFAULT 0,
-  created_at timestamptz DEFAULT now(),
-  updated_at timestamptz DEFAULT now()
+  nama_produk TEXT NOT NULL,
+  harga_satuan NUMERIC NOT NULL DEFAULT 0,
+  quantity INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMPTZ DEFAULT now(),
+  updated_at TIMESTAMPTZ DEFAULT now()
 );
 
--- Enable Row Level Security
-ALTER TABLE users ENABLE ROW LEVEL SECURITY;
-ALTER TABLE products ENABLE ROW LEVEL SECURITY;
-
--- RLS Policies for users table
-CREATE POLICY "Users can read own data"
-  ON users
-  FOR SELECT
-  TO authenticated
-  USING (auth.uid()::text = id::text);
-
--- RLS Policies for products table
-CREATE POLICY "Everyone can read products"
-  ON products
-  FOR SELECT
-  TO authenticated
-  USING (true);
-
-CREATE POLICY "Admins can insert products"
-  ON products
-  FOR INSERT
-  TO authenticated
-  WITH CHECK (
-    EXISTS (
-      SELECT 1 FROM users 
-      WHERE id::text = auth.uid()::text 
-      AND role = 'admin'
-    )
-  );
-
-CREATE POLICY "Admins can update products"
-  ON products
-  FOR UPDATE
-  TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM users 
-      WHERE id::text = auth.uid()::text 
-      AND role = 'admin'
-    )
-  );
-
-CREATE POLICY "Admins can delete products"
-  ON products
-  FOR DELETE
-  TO authenticated
-  USING (
-    EXISTS (
-      SELECT 1 FROM users 
-      WHERE id::text = auth.uid()::text 
-      AND role = 'admin'
-    )
-  );
-
--- Insert sample users
-INSERT INTO users (username, password, role) VALUES
-  ('user1', 'password123', 'user'),
-  ('admin1', 'admin123', 'admin');
-
--- Insert sample products
-INSERT INTO products (nama_produk, harga_satuan, quantity) VALUES
-  ('Laptop Gaming ROG', 25000000, 5),
-  ('Mouse Wireless Logitech', 150000, 25),
-  ('Keyboard Mechanical RGB', 850000, 15),
-  ('Monitor 27" 4K', 4500000, 8),
-  ('Webcam HD 1080p', 450000, 12),
-  ('Headset Gaming', 750000, 18);
-
--- Function to update updated_at timestamp
+-- ========================================
+-- Function dan Trigger untuk auto-update updated_at
+-- ========================================
 CREATE OR REPLACE FUNCTION update_updated_at_column()
 RETURNS TRIGGER AS $$
 BEGIN
-    NEW.updated_at = now();
-    RETURN NEW;
+  NEW.updated_at := CURRENT_TIMESTAMP;
+  RETURN NEW;
 END;
-$$ language 'plpgsql';
+$$ LANGUAGE plpgsql;
 
--- Trigger to automatically update updated_at
-CREATE TRIGGER update_products_updated_at 
-    BEFORE UPDATE ON products 
-    FOR EACH ROW 
-    EXECUTE FUNCTION update_updated_at_column();
+CREATE TRIGGER update_products_updated_at
+  BEFORE UPDATE ON products
+  FOR EACH ROW
+  EXECUTE FUNCTION update_updated_at_column();
+
+-- ========================================
+-- Insert data sample untuk users
+-- ========================================
+INSERT INTO users (username, password, role) VALUES
+  ('user1', 'password123', 'user'),
+  ('admin1', 'adminpassword', 'admin'),
+  ('user2', 'password123', 'user'),
+  ('admin2', 'adminpassword', 'admin');
+
+-- ========================================
+-- Insert data sample untuk products
+-- ========================================
+INSERT INTO products (nama_produk, harga_satuan, quantity) VALUES
+  ('Laptop Gaming ROG Strix', 25000000, 5),
+  ('Mouse Wireless Logitech MX Master 3', 1500000, 25),
+  ('Keyboard Mechanical RGB Corsair', 2850000, 15),
+  ('Monitor 27" 4K LG UltraGear', 6500000, 8),
+  ('Webcam HD 1080p Logitech C920', 1450000, 12),
+  ('Headset Gaming SteelSeries', 1750000, 18),
+  ('SSD NVMe 1TB Samsung', 2200000, 30),
+  ('RAM DDR4 32GB Corsair', 4500000, 20),
+  ('Graphics Card RTX 4070', 12000000, 3),
+  ('Motherboard ASUS ROG', 5500000, 7),
+  ('Power Supply 850W Modular', 1800000, 12),
+  ('Case Gaming RGB Cooler Master', 1200000, 15),
+  ('CPU Cooler AIO 240mm', 2800000, 10),
+  ('Speakers 2.1 Logitech Z623', 2500000, 8),
+  ('Mousepad Gaming Large', 450000, 50);
+
+-- ========================================
+-- Verifikasi data yang telah diinsert
+-- ========================================
+-- Tampilkan semua users
+SELECT 'USERS TABLE:' AS info;
+SELECT id, username, role, created_at FROM users;
+
+-- Tampilkan semua products
+SELECT 'PRODUCTS TABLE:' AS info;
+SELECT id, nama_produk, harga_satuan, quantity, created_at FROM products;
+
+-- Tampilkan statistik
+SELECT 'STATISTICS:' AS info;
+SELECT 
+  (SELECT COUNT(*) FROM users) AS total_users,
+  (SELECT COUNT(*) FROM users WHERE role = 'admin') AS total_admins,
+  (SELECT COUNT(*) FROM products) AS total_products,
+  (SELECT SUM(quantity) FROM products) AS total_stock,
+  (SELECT SUM(harga_satuan * quantity) FROM products) AS total_inventory_value;
+
+-- ========================================
+-- Index untuk optimasi performa (opsional)
+-- ========================================
+CREATE INDEX idx_users_username ON users(username);
+CREATE INDEX idx_users_role ON users(role);
+CREATE INDEX idx_products_nama ON products(nama_produk);
+CREATE INDEX idx_products_quantity ON products(quantity);
+
+-- ========================================
+-- Selesai! Database siap digunakan
+-- ========================================
