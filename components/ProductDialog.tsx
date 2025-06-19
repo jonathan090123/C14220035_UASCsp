@@ -90,7 +90,10 @@ export default function ProductDialog({ open, onOpenChange, product, onSave }: P
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="sm:max-w-[425px]">
+      <DialogContent
+        className="sm:max-w-[425px] bg-white dark:bg-zinc-900 shadow-lg"
+        style={{ backgroundColor: '#fff', backgroundImage: 'none' }}
+      >
         <DialogHeader>
           <DialogTitle className="text-xl">
             {product ? 'Edit Product' : 'Add New Product'}
